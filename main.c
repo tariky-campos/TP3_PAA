@@ -4,6 +4,7 @@
 #include "funcoes.h"   // coloque seu header aqui
 
 int main() {
+    srand(time(NULL));
     char nomeArquivo[100];
 
     printf("Insira o nome do arquivo: ");
@@ -19,9 +20,10 @@ int main() {
 
     // 3. Carregar texto criptografado para análise
     char chave[26];
-    //inicializarChave(chave);
+    inicializarChave(chave);
+    mostrarChave(chave);
 
-    //menuPrincipal(texto, chave);
+    menuPrincipal(texto, chave);
 
     free(texto);
     return 0;

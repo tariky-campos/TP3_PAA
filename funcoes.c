@@ -2,10 +2,13 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
+#include <ctype.h>
 
 int gerarXAleatorio(){
     int i;
-    return (i = rand() % 26);
+    i = rand() % 26;
+    printf("chave aleatoria = %d",i);
+    return i;
 }
 
 void criptografar(char *texto, int x) {
@@ -35,6 +38,32 @@ void salvarArquivo(const char *nome, const char *conteudo) {
     fclose(fp);
 
     printf("\nArquivo '%s' salvo com sucesso!\n", nome);
+}
+void inicializarChave(char chave[26]) {
+    for (int i = 0; i < 26; i++) {
+        chave[i] = '?';   // '?' significa "desconhecida"
+    }
+}
+
+
+// Mostra a chave no formato solicitado:
+// ABCDEFG...Z
+// S ? B H ? ...
+void mostrarChave(const char chave[26]) {
+    // Linha 1: alfabeto
+    for (int i = 0; i < 26; i++) {
+        putchar('A' + i);
+    }
+    putchar('\n');
+
+    // Linha 2: mapeamentos (ou espaço para desconhecido)
+    for (int i = 0; i < 26; i++) {
+        if (chave[i] == '?' || chave[i] == '\0')
+            putchar(' ');
+        else
+            putchar(chave[i]);
+    }
+    putchar('\n');
 }
 
 char* lerArquivoCompleto(const char *nome) {
@@ -109,6 +138,71 @@ void mostrarEstado(const char *textoCripto, char chave[26]) {
     printf("\n\n");
 }
 
+void exportarChave(char chave[26]) {
+    FILE *fp = fopen("chave_final.txt", "w");
+
+    if (!fp) {
+        printf("Erro ao criar arquivo da chave!\n");
+        return;
+    }
+
+    fprintf(fp, "Chave Final da Criptoanalise:\n\n");
+    fprintf(fp, "ABCDEFGHIJKLMNOPQRSTUVWXYZ\n");
+
+    for (int i = 0; i < 26; i++) {
+        if (chave[i] == '?' || chave[i] == 0)
+            fprintf(fp, "?");
+        else
+            fprintf(fp, "%c", chave[i]);
+    }
+
+    fprintf(fp, "\n");
+
+    fclose(fp);
+    printf("\nArquivo 'chave_final.txt' salvo com sucesso!\n");
+}
+
+
+void analiseFrequencia(const char *texto, char chave[26]) {
+    int freq[26] = {0};
+
+    // 1. contar frequência
+    for (int i = 0; texto[i] != '\0'; i++) {
+        char c = toupper(texto[i]);
+        if (c >= 'A' && c <= 'Z') {
+            freq[c - 'A']++;
+        }
+    }
+
+    // 2. mostrar tabela
+    printf("\n===== Análise de Frequência =====\n");
+    printf("Letra | Contagem\n");
+    printf("------------------\n");
+
+    for (int i = 0; i < 26; i++) {
+        if (freq[i] > 0)
+            printf("  %c   |   %d\n", 'A' + i, freq[i]);
+    }
+
+    printf("\nSugestão (não aplica automaticamente):\n");
+    printf("A letra mais frequente em português = 'E'\n");
+    printf("Compare as contagens para inferir substituições.\n\n");
+}
+
+void atualizarChave(char chave[26], char original, char mapeada) {
+    original = toupper(original);
+    mapeada = toupper(mapeada);
+
+    if (original < 'A' || original > 'Z') {
+        printf("Letra original inválida!\n");
+        return;
+    }
+
+    int idx = original - 'A';
+    chave[idx] = mapeada;
+
+    printf("Chave atualizada: %c -> %c\n", original, mapeada);
+}
 void menuPrincipal(char *textoCriptografado, char chave[26]) {
     int opcao = 0;
 
@@ -131,11 +225,11 @@ void menuPrincipal(char *textoCriptografado, char chave[26]) {
                 mostrarEstado(textoCriptografado, chave);
                 break;
 
-            // case 2: {
-            //     printf("\n=== Análise de Frequência ===\n");
-            //     analiseFrequencia(textoCriptografado, chave);
-            //     break;
-            // }
+            case 2: {
+                printf("\n=== Análise de Frequência ===\n");
+                analiseFrequencia(textoCriptografado, chave);
+                break;
+            }
 
             case 3: {
                 char padrao[100];
@@ -157,20 +251,20 @@ void menuPrincipal(char *textoCriptografado, char chave[26]) {
                 break;
             }
 
-            // case 5: {
-            //     char original, mapeada;
+            case 5: {
+                char original, mapeada;
 
-            //     printf("Digite letra original e letra mapeada (ex: A S): ");
-            //     scanf(" %c %c", &original, &mapeada);
+                printf("Digite letra original e letra mapeada (ex: A S): ");
+                scanf(" %c %c", &original, &mapeada);
 
-            //     atualizarChave(chave, original, mapeada);
-            //     break;
-            // }
+                atualizarChave(chave, original, mapeada);
+                break;
+            }
 
-            // case 6:
-            //     exportarChave(chave);
-            //     printf("\nEncerrando...\n");
-            //     break;
+            case 6:
+                exportarChave(chave);
+                printf("\nEncerrando...\n");
+                break;
 
             default:
                 printf("Opção inválida!\n");
