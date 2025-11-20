@@ -247,7 +247,7 @@ void menuPrincipal(char *textoCriptografado, char chave[26]) {
                 printf("Digite padrão e tolerância: ");
                 scanf("%s %d", padrao, &tolerancia);
 
-                shiftAndAproximado(textoCriptografado, padrao, tolerancia);
+                shiftAndAprox(textoCriptografado, padrao, tolerancia);
                 break;
             }
 
@@ -270,4 +270,31 @@ void menuPrincipal(char *textoCriptografado, char chave[26]) {
                 printf("Opção inválida!\n");
         }
     }
+}
+
+#include <string.h>
+
+char removerAcentos(unsigned char c) {
+    static const unsigned char acentuados[] =
+        "áàãâäÁÀÃÂÄ"
+        "éèêëÉÈÊË"
+        "íìîïÍÌÎÏ"
+        "óòõôöÓÒÕÔÖ"
+        "úùûüÚÙÛÜ"
+        "çÇ";
+
+    static const unsigned char semAcento[] =
+        "aaaaaAAAAA"
+        "eeeeEEEE"
+        "iiiiIIII"
+        "oooooOOOOO"
+        "uuuuUUUU"
+        "cC";
+
+    for (int i = 0; acentuados[i] != '\0'; i++) {
+        if (c == acentuados[i])
+            return semAcento[i];
+    }
+
+    return c; // não tinha acento
 }

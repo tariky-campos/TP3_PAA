@@ -12,6 +12,7 @@ int main() {
 
     // 1. Ler texto original
     char *texto = lerArquivoCompleto(nomeArquivo);
+    
 
     // 2. Gerar x, criptografar e salvar
     int x = gerarXAleatorio();
@@ -23,7 +24,8 @@ int main() {
     inicializarChave(chave);
     mostrarChave(chave);
 
-    menuPrincipal(texto, chave);
+    char *textoCriptografado = lerArquivoCompleto("criptografado.txt");
+    menuPrincipal(textoCriptografado, chave);
 
     free(texto);
     return 0;

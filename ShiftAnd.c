@@ -4,56 +4,76 @@
 #include <stdint.h>
 #include "ShiftAnd.h"
 #define MAXCHAR 256
-
+#define MAX_M_BITS 64    // máximo de bits que suportamos no padrão
+#define MAX_ERROS 10
 // =========================================================
 // SHIFT–AND APROXIMADO (somente substituição)
 // =========================================================
 #define MAX_ERROS 10
 
-void shiftAndAproximado(const char *T, const char *P, int k) {
-    long n = strlen(T);
-    long m = strlen(P);
+void shiftAndAprox(const char *T, const char *P, int k) {
+    long n = (long) strlen(T);
+    long m = (long) strlen(P);
 
-    long Masc[MAXCHAR];
-    long R[MAX_ERROS + 1];
+    if (m == 0 || n == 0) {
+        printf("Texto ou padrao vazio.\n");
+        return;
+    }
+    if (m > MAX_M_BITS) {
+        printf("Erro: padrao muito grande para Shift-And (max %d chars)\n", MAX_M_BITS);
+        return;
+    }
+    if (k < 0) {
+        printf("Erro: tolerancia negativa.\n");
+        return;
+    }
+    if (k > MAX_ERROS) {
+        printf("Aviso: k > MAX_ERROS (%d). Usando %d.\n", MAX_ERROS, MAX_ERROS);
+        k = MAX_ERROS;
+    }
+    if (k > m) k = (int)m;
 
-    long Ri, Rant, Rnovo;
+    // máscaras por caractere (uint64_t para suportar até 64 bits)
+    uint64_t Masc[MAXCHAR];
+    uint64_t R[MAX_ERROS + 1];
 
-    for (int i = 0; i < MAXCHAR; i++)
-        Masc[i] = 0;
+    // inicializa
+    for (int i = 0; i < MAXCHAR; ++i) Masc[i] = 0;
+    for (int j = 0; j <= MAX_ERROS; ++j) R[j] = 0;
 
-    for (int i = 1; i <= m; i++)
-        Masc[(unsigned char)P[i-1]] |= 1 << (m - i);
+    // construir máscaras: bit 0 corresponde a última posição do padrão (check abaixo)
+    // seguí sua convenção: posição de bit = (m - i)
+    for (int i = 1; i <= m; ++i) {
+        unsigned char c = (unsigned char) P[i - 1];
+        Masc[c] |= (1ULL << (m - i));
+    }
 
+    uint64_t Ri = (1ULL << (m - 1));
+    // inicializa R[0]...R[k]
     R[0] = 0;
-    Ri = 1 << (m - 1);
+    for (int j = 1; j <= k; ++j) {
+        R[j] = (1ULL << (m - j)) | R[j - 1];
+    }
 
-    for (int j = 1; j <= k; j++)
-        R[j] = (1 << (m - j)) | R[j - 1];
-
-    for (int i = 0; i < n; i++) {
-
-        Rant = R[0];
-        Rnovo = ((((unsigned long)Rant) >> 1) | Ri)
-                & Masc[(unsigned char)T[i]];
-
+    // varre o texto
+    for (long i = 0; i < n; ++i) {
+        uint64_t Rant = R[0];
+        uint64_t Rnovo = ((((uint64_t) Rant) >> 1) | Ri) & Masc[(unsigned char) T[i]];
         R[0] = Rnovo;
 
-        for (int j = 1; j <= k; j++) {
-
-            long temp = Rnovo;
-
-            Rnovo = ((((unsigned long)R[j]) >> 1)
-                      & Masc[(unsigned char)T[i]])
-                      | Rant
-                      | (((unsigned long)(Rant | temp)) >> 1);
-
+        for (int j = 1; j <= k; ++j) {
+            uint64_t tmp = Rnovo;
+            Rnovo = ((((uint64_t) R[j]) >> 1) & Masc[(unsigned char) T[i]])
+                    | Rant
+                    | (((uint64_t)(Rant | tmp)) >> 1);
             Rant = R[j];
             R[j] = Rnovo | Ri;
         }
 
-        if ((Rnovo & 1) != 0) {
-            printf("Casamento (k=%d) na posicao %d\n", k, i + 1);
+        // se o bit 0 está ligado, houve casamento com até k erros
+        if ((Rnovo & 1ULL) != 0ULL) {
+            long pos = i + 1; // sua versão imprimia i+1; Ziviani usa i-m+2 em exato
+            printf("Casamento aproximado (k=%d) na posicao %ld\n", k, pos);
         }
     }
 }
@@ -62,23 +82,36 @@ void shiftAndAproximado(const char *T, const char *P, int k) {
 // SHIFT-AND EXATO
 // ================================
 void shiftAndExato(const char *T, const char *P) {
-    long n = strlen(T);
-    long m = strlen(P);
-    long Masc[MAXCHAR];
-    long R = 0;
+    long n = (long) strlen(T);
+    long m = (long) strlen(P);
 
-    for (int i = 0; i < MAXCHAR; i++)
-        Masc[i] = 0;
+    if (m == 0 || n == 0) {
+        printf("Texto ou padrao vazio.\n");
+        return;
+    }
+    if (m > MAX_M_BITS) {
+        printf("Erro: padrao muito grande para Shift-And (max %d chars)\n", MAX_M_BITS);
+        return;
+    }
 
-    for (int i = 1; i <= m; i++)
-        Masc[(unsigned char)P[i-1]] |= 1 << (m - i);
+    uint64_t Masc[MAXCHAR];
+    uint64_t R = 0;
 
-    for (int i = 0; i < n; i++) {
-        R = ((unsigned long)R >> 1 | (1 << (m - 1)))
-            & Masc[(unsigned char)T[i]];
+    for (int i = 0; i < MAXCHAR; ++i) Masc[i] = 0;
 
-        if ((R & 1) != 0) {
-            printf("Casamento na posicao %ld\n", i - m + 2);
+    for (int i = 1; i <= m; ++i) {
+        unsigned char c = (unsigned char) P[i - 1];
+        Masc[c] |= (1ULL << (m - i));
+    }
+
+    uint64_t bitFim = 1ULL << (m - 1);
+
+    for (long i = 0; i < n; ++i) {
+        R = (((uint64_t) R) >> 1 | (1ULL << (m - 1))) & Masc[(unsigned char) T[i]];
+        if ((R & bitFim) != 0ULL) {
+            // posição inicial do casamento:
+            long inicio = i - m + 2; // mantém mesma saída do Ziviani
+            printf("Casamento na posicao %ld\n", inicio);
         }
     }
 }
