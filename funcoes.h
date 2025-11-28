@@ -12,3 +12,4 @@ void mostrarChave(const char chave[26]);
 void exportarChave(char chave[26]); 
 void analiseFrequencia(const char *texto, char chave[26]); 
 void atualizarChave(char chave[26], char original, char mapeada);
+char* removerAcentos(char* texto);

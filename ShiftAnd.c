@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdint.h>
+#include <ctype.h>
 #include "ShiftAnd.h"
 #define MAXCHAR 256
 #define MAX_M_BITS 64    // máximo de bits que suportamos no padrão
@@ -101,17 +102,31 @@ void shiftAndExato(const char *T, const char *P) {
 
     for (int i = 1; i <= m; ++i) {
         unsigned char c = (unsigned char) P[i - 1];
+        
+        // 1. Marca a letra exata que o usuário digitou
         Masc[c] |= (1ULL << (m - i));
+
+        // 2. Marca também a versão "irmã" (se digitou 'a', marca também 'A')
+        if (c >= 'a' && c <= 'z') {
+            Masc[toupper(c)] |= (1ULL << (m - i)); // Marca a maiúscula correspondente
+        } else if (c >= 'A' && c <= 'Z') {
+            Masc[tolower(c)] |= (1ULL << (m - i)); // Marca a minúscula correspondente
+        }
     }
-
-    uint64_t bitFim = 1ULL << (m - 1);
-
+uint64_t bitFim = 1ULL << (m - 1);
+    int quantidade = 0;
     for (long i = 0; i < n; ++i) {
         R = (((uint64_t) R) >> 1 | (1ULL << (m - 1))) & Masc[(unsigned char) T[i]];
-        if ((R & bitFim) != 0ULL) {
-            // posição inicial do casamento:
-            long inicio = i - m + 2; // mantém mesma saída do Ziviani
+        // Quando o bit 0 está ligado significa match completo do padrão
+        if ((R & 1ULL) != 0ULL) {
+            quantidade++;
+            long inicio = i - m + 2; // posição inicial (1-based, compatível com saída anterior)
             printf("Casamento na posicao %ld\n", inicio);
         }
+    }
+    if (quantidade == 0) {
+        printf("Nenhum casamento encontrado.\n");
+    }else{
+        printf("Total de casamentos encontrados: %d\n", quantidade);
     }
 }

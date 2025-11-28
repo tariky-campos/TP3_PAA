@@ -39,6 +39,7 @@ void salvarArquivo(const char *nome, const char *conteudo) {
 
     printf("\nArquivo '%s' salvo com sucesso!\n", nome);
 }
+
 void inicializarChave(char chave[26]) {
     for (int i = 0; i < 26; i++) {
         chave[i] = '?';   // '?' significa "desconhecida"
@@ -118,22 +119,22 @@ void mostrarEstado(const char *textoCripto, char chave[26]) {
     printf("=== Texto parcialmente decifrado ===\n");
 
     for (int i = 0; textoCripto[i] != '\0'; i++) {
-        char c = textoCripto[i];
+        unsigned char c = textoCripto[i];
+        unsigned char lc =  tolower(c);
 
-        if (c >= 'A' && c <= 'Z') {
-            int idx = c - 'A';
-            if (chave[idx] != '?') {
-                // letra decifrada → imprimir em verde
-                printf("\033[32m%c\033[0m", chave[idx]);
+        if (lc >= 'a' && lc <= 'z') {
+            int idx = lc - 'a';
+            char minuscula = (char) tolower((unsigned char) chave[idx]);
+            if (chave[idx] != '?' && chave[idx] != '\0') {
+                printf("\033[32m%c\033[0m", minuscula);
             } else {
-                // letra não decifrada
-                printf("%c", c);
+                printf("%c", lc);
             }
         } else {
-            // Não é letra
             printf("%c", c);
         }
     }
+    
 
     printf("\n\n");
 }
@@ -234,7 +235,7 @@ void menuPrincipal(char *textoCriptografado, char chave[26]) {
             case 3: {
                 char padrao[100];
                 printf("Digite o padrão para busca exata: ");
-                scanf("%s", padrao);
+                scanf(" %99[^\n]", padrao);
 
                 shiftAndExato(textoCriptografado, padrao);
                 break;
@@ -274,27 +275,51 @@ void menuPrincipal(char *textoCriptografado, char chave[26]) {
 
 #include <string.h>
 
-char removerAcentos(unsigned char c) {
-    static const unsigned char acentuados[] =
-        "áàãâäÁÀÃÂÄ"
-        "éèêëÉÈÊË"
-        "íìîïÍÌÎÏ"
-        "óòõôöÓÒÕÔÖ"
-        "úùûüÚÙÛÜ"
-        "çÇ";
+char* removerAcentos(char* texto) {
+    char *leitura = texto;
+    char *escrita = texto;
 
-    static const unsigned char semAcento[] =
-        "aaaaaAAAAA"
-        "eeeeEEEE"
-        "iiiiIIII"
-        "oooooOOOOO"
-        "uuuuUUUU"
-        "cC";
+    // Mapeamento de Strings (UTF-8) para Char simples
+    const char *comAcento[] = {
+        "á", "à", "ã", "â", "ä", "Á", "À", "Ã", "Â", "Ä",
+        "é", "è", "ê", "ë", "É", "È", "Ê", "Ë",
+        "í", "ì", "î", "ï", "Í", "Ì", "Î", "Ï",
+        "ó", "ò", "õ", "ô", "ö", "Ó", "Ò", "Õ", "Ô", "Ö",
+        "ú", "ù", "û", "ü", "Ú", "Ù", "Û", "Ü",
+        "ç", "Ç", "ñ", "Ñ",
+        NULL
+    };
 
-    for (int i = 0; acentuados[i] != '\0'; i++) {
-        if (c == acentuados[i])
-            return semAcento[i];
+    const char semAcento[] = {
+        'a', 'a', 'a', 'a', 'a', 'A', 'A', 'A', 'A', 'A',
+        'e', 'e', 'e', 'e', 'E', 'E', 'E', 'E',
+        'i', 'i', 'i', 'i', 'I', 'I', 'I', 'I',
+        'o', 'o', 'o', 'o', 'o', 'O', 'O', 'O', 'O', 'O',
+        'u', 'u', 'u', 'u', 'U', 'U', 'U', 'U',
+        'c', 'C', 'n', 'N'
+    };
+
+    while (*leitura) {
+        int encontrou = 0;
+
+        // Tenta casar o trecho atual com algum acento da lista
+        for (int i = 0; comAcento[i] != NULL; i++) {
+            size_t len = strlen(comAcento[i]);
+            
+            if (strncmp(leitura, comAcento[i], len) == 0) {
+                *escrita = semAcento[i]; // Escreve a letra sem acento
+                escrita++;               // Avança 1 na escrita
+                leitura += len;          // Pula os 2 bytes (ou mais) do acento na leitura
+                encontrou = 1;
+                break;
+            }
+        }
+        if (!encontrou) {
+            *escrita = *leitura;
+            escrita++;
+            leitura++;
+        }
     }
-
-    return c; // não tinha acento
+    *escrita = '\0'; // Termina a string corretamente
+    return texto;
 }
