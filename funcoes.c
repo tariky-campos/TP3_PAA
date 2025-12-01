@@ -211,7 +211,7 @@ void menuPrincipal(char *textoCriptografado, char chave[26]) {
         printf("\n===== MENU CRIPTOANÁLISE =====\n");
         printf("1 - Estado atual da criptoanálise\n");
         printf("2 - Análise de frequência (chute)\n");
-        printf("3 - Casamento exato (Shift-And, KMP ou BM)\n");
+        printf("3 - Casamento exato (Shift-And)\n");
         printf("4 - Casamento aproximado (Shift-And Aproximado)\n");
         printf("5 - Alterar chave manualmente\n");
         printf("6 - Exportar chave e encerrar\n");
